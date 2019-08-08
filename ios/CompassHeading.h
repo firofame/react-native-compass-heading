@@ -1,5 +1,6 @@
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface CompassHeading : NSObject <RCTBridgeModule>
+@interface CompassHeading : RCTEventEmitter <RCTBridgeModule>
 
 @end
