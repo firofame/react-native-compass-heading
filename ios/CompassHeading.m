@@ -10,8 +10,6 @@
 
 @implementation CompassHeading
 
-RCT_EXPORT_MODULE()
-
 - (instancetype)init {
     if (self = [super init]) {
         if ([CLLocationManager headingAvailable]) {
