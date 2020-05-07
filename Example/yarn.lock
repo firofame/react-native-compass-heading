@@ -4951,10 +4951,10 @@ react-is@^16.12.0, react-is@^16.8.1, react-is@^16.8.4, react-is@^16.8.6:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
   integrity sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==
 
-react-native-compass-heading@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/react-native-compass-heading/-/react-native-compass-heading-1.0.1.tgz#daf881887a30c1ee406bbd1a349026a6907d809a"
-  integrity sha512-eJyniGzcL2KwLZhaPRTTVZ24maF0xp/knmF3QoEfqc50Swax12gOa+NwMB0rSHVEKqCZKdxRf3KvWFK5wuo/MA==
+react-native-compass-heading@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/react-native-compass-heading/-/react-native-compass-heading-1.0.2.tgz#f8f334037eaefb4e202af117979f5be1c8db68a1"
+  integrity sha512-ZCKdzzL5LDXBzwQmEauyS+gWdMgNGWppC2PlOWcEv1dbmT4Ev3PzkZB+bt9WlRnDYwZdu44NqO//W7Yyyp2JoA==
 
 react-native@0.62.2:
   version "0.62.2"
