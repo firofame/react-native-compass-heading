@@ -2,6 +2,8 @@
 
 <img src="android.png" width="40%"> <img src="ios.png" width="40%">
 
+credits - https://github.com/vnil/react-native-simple-compass
+
 ## Installation
 
 `$ yarn add react-native-compass-heading`
