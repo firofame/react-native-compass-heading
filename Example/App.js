@@ -1,13 +1,3 @@
-# react-native-compass-heading
-
-## Installation
-
-`$ yarn add react-native-compass-heading`
-
-`$ cd ios/ && pod install && cd ..`
-
-## Usage
-```javascript
 import React, {useState, useEffect} from 'react';
 import {Image, StyleSheet} from 'react-native';
 import CompassHeading from 'react-native-compass-heading';
@@ -48,4 +38,3 @@ const styles = StyleSheet.create({
 });
 
 export default App;
-```
