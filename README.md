@@ -1,6 +1,6 @@
 # react-native-compass-heading
 
-![android compass](android.png "Android Compass") ![ios compass](ios.png "iOS Compass")
+<img src="android.png" width="40%"> <img src="ios.png" width="40%">
 
 ## Installation
 
