@@ -1,5 +1,7 @@
 # react-native-compass-heading
 
+![android compass](android.png "Android Compass") ![ios compass](ios.png "iOS Compass")
+
 ## Installation
 
 `$ yarn add react-native-compass-heading`
