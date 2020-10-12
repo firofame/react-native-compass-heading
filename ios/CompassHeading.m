@@ -1,6 +1,6 @@
 #import "CompassHeading.h"
 #import <React/RCTEventDispatcher.h>
-#import <Corelocation/CoreLocation.h>
+#import <CoreLocation/CoreLocation.h>
 
 #define kHeadingUpdated @"HeadingUpdated"
 
