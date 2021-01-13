@@ -1,8 +1,8 @@
 {
   "name": "react-native-compass-heading",
   "title": "React Native Compass Heading",
-  "version": "1.0.2",
-  "description": "TODO",
+  "version": "1.1.0",
+  "description": "Listener to device's compass information.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

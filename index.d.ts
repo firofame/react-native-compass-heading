@@ -4,5 +4,7 @@ declare module 'react-native-compass-heading' {
     callback: (heading: number) => void,
   ) => Promise<boolean>;
 
-  export const stop: () => void;
+  export const stop: () => Promise<void>;
+
+  export const hasCompass: () => Promise<boolean>;
 }
