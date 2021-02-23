@@ -1,4 +1,4 @@
-package com.reactlibrary.reactnativecompasheading;
+package com.reactlibrary.compassheading;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
