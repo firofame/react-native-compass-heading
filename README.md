@@ -22,8 +22,11 @@ const App = () => {
   useEffect(() => {
     const degree_update_rate = 3;
 
-    CompassHeading.start(degree_update_rate, degree => {
-      setCompassHeading(degree);
+    // accuracy on android will be hardcoded to 1
+    // since the value is not available.
+    // For iOS, it is in degrees
+    CompassHeading.start(degree_update_rate, {heading, accuracy} => {
+      setCompassHeading(heading);
     });
 
     return () => {
