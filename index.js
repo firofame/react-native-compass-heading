@@ -12,8 +12,8 @@ CompassHeading.start = async (update_rate, callback) => {
   }
 
   const compassEventEmitter = new NativeEventEmitter(CompassHeading);
-  listener = compassEventEmitter.addListener('HeadingUpdated', (degree) => {
-    callback(degree);
+  listener = compassEventEmitter.addListener('HeadingUpdated', (data) => {
+    callback(data);
   });
 
   return await _start(update_rate === null ? 0 : update_rate);

@@ -1,23 +1,31 @@
 #import "CompassHeading.h"
-#import <React/RCTEventDispatcher.h>
-#import <Corelocation/CoreLocation.h>
 
 #define kHeadingUpdated @"HeadingUpdated"
 
-@interface CompassHeading() <CLLocationManagerDelegate>
-@property (strong, nonatomic) CLLocationManager *locationManager;
-@end
 
-@implementation CompassHeading
+@implementation CompassHeading{
+    CLLocationManager *locationManager;
+    BOOL isObserving;
+}
+
+RCT_EXPORT_MODULE()
+
+
++ (BOOL)requiresMainQueueSetup
+{
+    return NO;
+}
 
 - (instancetype)init {
     if (self = [super init]) {
+        isObserving = NO;
+        
         if ([CLLocationManager headingAvailable]) {
-            self.locationManager = [[CLLocationManager alloc] init];
-            self.locationManager.delegate = self;
+            locationManager = [[CLLocationManager alloc] init];
+            locationManager.delegate = self;
         }
         else {
-            self.locationManager = nil;
+            locationManager = nil;
             //NSLog(@"Heading not available");
         }
     }
@@ -29,6 +37,14 @@
 
 - (NSArray<NSString *> *)supportedEvents {
     return @[kHeadingUpdated];
+}
+
+- (void)startObserving {
+    isObserving = YES;
+}
+
+- (void)stopObserving {
+    isObserving = NO;
 }
 
 #pragma mark - CLLocationManagerDelegate
@@ -56,7 +72,12 @@
             heading = (heading + 180) % 360;
         }
         
-        [self sendEventWithName:kHeadingUpdated body:@(heading)];
+        if(isObserving){
+            [self sendEventWithName:kHeadingUpdated body:@{
+                @"heading": @(heading),
+                @"accuracy": @(newHeading.headingAccuracy)
+            }];
+        }
     });
 }
 
@@ -70,8 +91,9 @@
 
 - (BOOL)locationManagerShouldDisplayHeadingCalibration:(CLLocationManager *)manager
 {
-    //CLLocationDirection accuracy = [[manager heading] headingAccuracy];
-    return false; //accuracy <= 0.0f || accuracy > 10.0f;
+    // return false;
+    CLLocationDirection accuracy = [[manager heading] headingAccuracy];
+    return accuracy <= 0.0f || (accuracy > locationManager.headingFilter);
 }
 
 #pragma mark - React
@@ -81,8 +103,8 @@ RCT_EXPORT_METHOD(start: (NSInteger) headingFilter
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
     @try{
-        self.locationManager.headingFilter = headingFilter;
-        [self.locationManager startUpdatingHeading];
+        locationManager.headingFilter = headingFilter;
+        [locationManager startUpdatingHeading];
         resolve(@(YES));
     }
     @catch (NSException *exception) {
@@ -91,20 +113,13 @@ RCT_EXPORT_METHOD(start: (NSInteger) headingFilter
 }
 
 RCT_EXPORT_METHOD(stop) {
-    [self.locationManager stopUpdatingHeading];
+    [locationManager stopUpdatingHeading];
 }
 
 RCT_EXPORT_METHOD(hasCompass:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    BOOL result = self.locationManager != nil ? YES : NO;
+    BOOL result = locationManager != nil ? YES : NO;
     resolve(@(result));
-}
-
-RCT_EXPORT_MODULE()
-    
-+ (BOOL)requiresMainQueueSetup
-{
-    return NO;
 }
 
 @end

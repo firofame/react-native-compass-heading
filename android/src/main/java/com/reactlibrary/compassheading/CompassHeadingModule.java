@@ -5,6 +5,8 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.WritableMap;
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -151,9 +153,13 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
                     mAzimuth = newAzimuth;
 
+                    WritableMap params = Arguments.createMap();
+                    params.putDouble("heading", mAzimuth);
+                    params.putDouble("accuracy", 1.0);
+
                     getReactApplicationContext()
-                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                            .emit("HeadingUpdated", mAzimuth);
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("HeadingUpdated", params);
                 }
             }
         }
