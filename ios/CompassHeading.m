@@ -1,23 +1,32 @@
 #import "CompassHeading.h"
-#import <React/RCTEventDispatcher.h>
-#import <Corelocation/CoreLocation.h>
 
 #define kHeadingUpdated @"HeadingUpdated"
 
-@interface CompassHeading() <CLLocationManagerDelegate>
-@property (strong, nonatomic) CLLocationManager *locationManager;
-@end
 
-@implementation CompassHeading
+@implementation CompassHeading{
+    CLLocationManager *locationManager;
+    BOOL isObserving;
+}
+
+RCT_EXPORT_MODULE()
+
+
++ (BOOL)requiresMainQueueSetup
+{
+    return NO;
+}
 
 - (instancetype)init {
     if (self = [super init]) {
+        isObserving = NO;
+        
         if ([CLLocationManager headingAvailable]) {
-            self.locationManager = [[CLLocationManager alloc] init];
-            self.locationManager.delegate = self;
+            locationManager = [[CLLocationManager alloc] init];
+            locationManager.delegate = self;
         }
         else {
-            NSLog(@"Heading not available");
+            locationManager = nil;
+            //NSLog(@"Heading not available");
         }
     }
 
@@ -30,45 +39,87 @@
     return @[kHeadingUpdated];
 }
 
+- (void)startObserving {
+    isObserving = YES;
+}
+
+- (void)stopObserving {
+    isObserving = NO;
+}
+
 #pragma mark - CLLocationManagerDelegate
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateHeading:(CLHeading *)newHeading {
     if (newHeading.headingAccuracy < 0) {
         return;
     }
-    [self sendEventWithName:kHeadingUpdated body:@(newHeading.trueHeading)];
+    
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        NSInteger heading = newHeading.trueHeading;
+        
+        // if the device supports UI rotation, we need to adjust
+        // our heading value since it will default to
+        // top of the device in portrait
+        UIInterfaceOrientation interfaceOrientation = [[UIApplication sharedApplication] statusBarOrientation];
+        
+        if(interfaceOrientation == UIInterfaceOrientationLandscapeLeft){
+            heading = (heading + 270) % 360;
+        }
+        else if(interfaceOrientation == UIInterfaceOrientationLandscapeRight){
+            heading = (heading + 90) % 360;
+        }
+        else if(interfaceOrientation == UIInterfaceOrientationPortraitUpsideDown){
+            heading = (heading + 180) % 360;
+        }
+        
+        if(isObserving){
+            [self sendEventWithName:kHeadingUpdated body:@{
+                @"heading": @(heading),
+                @"accuracy": @(newHeading.headingAccuracy)
+            }];
+        }
+    });
 }
 
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
-    NSLog(@"AuthoriationStatus changed: %i", status);
+    //NSLog(@"AuthoriationStatus changed: %i", status);
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error {
-    NSLog(@"Location manager failed: %@", error);
+    //NSLog(@"Location manager failed: %@", error);
 }
 
 - (BOOL)locationManagerShouldDisplayHeadingCalibration:(CLLocationManager *)manager
 {
+    // return false;
     CLLocationDirection accuracy = [[manager heading] headingAccuracy];
-    return false; //accuracy <= 0.0f || accuracy > 10.0f;
+    return accuracy <= 0.0f || (accuracy > locationManager.headingFilter);
 }
 
 #pragma mark - React
 
-RCT_EXPORT_METHOD(start: (NSInteger) headingFilter) {
-    self.locationManager.headingFilter = headingFilter;
-    [self.locationManager startUpdatingHeading];
+RCT_EXPORT_METHOD(start: (NSInteger) headingFilter
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+    @try{
+        locationManager.headingFilter = headingFilter;
+        [locationManager startUpdatingHeading];
+        resolve(@(YES));
+    }
+    @catch (NSException *exception) {
+        reject(@"failed_start", exception.name, nil);
+    }
 }
 
 RCT_EXPORT_METHOD(stop) {
-    [self.locationManager stopUpdatingHeading];
+    [locationManager stopUpdatingHeading];
 }
 
-RCT_EXPORT_MODULE()
-    
-+ (BOOL)requiresMainQueueSetup
+RCT_EXPORT_METHOD(hasCompass:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    return NO;
+    BOOL result = locationManager != nil ? YES : NO;
+    resolve(@(result));
 }
 
 @end

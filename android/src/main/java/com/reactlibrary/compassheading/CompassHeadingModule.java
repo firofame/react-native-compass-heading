@@ -1,18 +1,25 @@
-package com.reactlibrary.reactnativecompasheading;
+package com.reactlibrary.compassheading;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.WritableMap;
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.view.Display;
+import android.view.WindowManager;
+import android.view.Surface;
 
 import android.content.Context;
 
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+
 
 public class CompassHeadingModule extends ReactContextBaseJavaModule implements SensorEventListener {
 
@@ -47,23 +54,45 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
     }
 
     @ReactMethod
-    public void start(int filter) {
+    public void start(int filter, Promise promise) {
 
-        sensorManager = (SensorManager) mApplicationContext.getSystemService(Context.SENSOR_SERVICE);
+        try{
+            sensorManager = (SensorManager) mApplicationContext.getSystemService(Context.SENSOR_SERVICE);
 
-        gsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        msensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            gsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            msensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
-        sensorManager.registerListener(this, gsensor, SensorManager.SENSOR_DELAY_GAME);
-        sensorManager.registerListener(this, msensor, SensorManager.SENSOR_DELAY_GAME);
+            sensorManager.registerListener(this, gsensor, SensorManager.SENSOR_DELAY_GAME);
+            sensorManager.registerListener(this, msensor, SensorManager.SENSOR_DELAY_GAME);
 
-        mFilter = filter;
+            mFilter = filter;
+            promise.resolve(true);
+        }
+        catch(Exception e){
+            promise.reject("failed_start", e.getMessage());
+        }
     }
 
     @ReactMethod
     public void stop() {
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
+        }
+    }
+
+    @ReactMethod
+    public void hasCompass(Promise promise) {
+
+        try{
+            SensorManager manager = (SensorManager) mApplicationContext.getSystemService(Context.SENSOR_SERVICE);
+
+            boolean res = manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null &&
+                manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null;
+
+            promise.resolve(res);
+        }
+        catch(Exception e){
+            promise.resolve(false);
         }
     }
 
@@ -104,13 +133,33 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
                 int newAzimuth = (int) Math.toDegrees(orientation[0]);
                 newAzimuth = (newAzimuth + 360) % 360;
 
+                Display disp = (((WindowManager) mApplicationContext.getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay();
+
+                if(disp != null){
+                    int rotation = disp.getRotation();
+
+                    if(rotation == Surface.ROTATION_90){
+                        newAzimuth = (newAzimuth + 90) % 360;
+                    }
+                    else if(rotation == Surface.ROTATION_270){
+                        newAzimuth = (newAzimuth + 270) % 360;
+                    }
+                    else if(rotation == Surface.ROTATION_180){
+                        newAzimuth = (newAzimuth + 180) % 360;
+                    }
+                }
+
                 if (Math.abs(mAzimuth - newAzimuth) > mFilter) {
 
                     mAzimuth = newAzimuth;
 
+                    WritableMap params = Arguments.createMap();
+                    params.putDouble("heading", mAzimuth);
+                    params.putDouble("accuracy", 1.0);
+
                     getReactApplicationContext()
-                            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                            .emit("HeadingUpdated", mAzimuth);
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("HeadingUpdated", params);
                 }
             }
         }

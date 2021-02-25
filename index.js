@@ -6,24 +6,24 @@ let listener;
 
 //Monkey patching
 let _start = CompassHeading.start;
-CompassHeading.start = (update_rate, callback) => {
+CompassHeading.start = async (update_rate, callback) => {
   if (listener) {
-    CompassHeading.stop();
+    await CompassHeading.stop();
   }
 
   const compassEventEmitter = new NativeEventEmitter(CompassHeading);
-  listener = compassEventEmitter.addListener('HeadingUpdated', (degree) => {
-    callback(degree);
+  listener = compassEventEmitter.addListener('HeadingUpdated', (data) => {
+    callback(data);
   });
 
-  _start(update_rate === null ? 0 : update_rate);
+  return await _start(update_rate === null ? 0 : update_rate);
 }
 
 let _stop = CompassHeading.stop;
-CompassHeading.stop = () => {
+CompassHeading.stop = async () => {
   listener && listener.remove();
   listener = null;
-  _stop();
+  await _stop();
 }
 
 export default CompassHeading;
