@@ -8,7 +8,7 @@ credits - https://github.com/vnil/react-native-simple-compass
 
 `$ yarn add react-native-compass-heading`
 
-`$ cd ios/ && pod install && cd ..`
+`$ npx pod-install`
 
 ## Usage
 ```javascript
