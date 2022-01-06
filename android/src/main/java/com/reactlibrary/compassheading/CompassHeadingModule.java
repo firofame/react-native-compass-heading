@@ -3,11 +3,11 @@ package com.reactlibrary.compassheading;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.WritableMap;
 
+import android.app.Activity;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -18,12 +18,12 @@ import android.view.Surface;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 
 public class CompassHeadingModule extends ReactContextBaseJavaModule implements SensorEventListener {
-
-    private final ReactApplicationContext reactContext;
 
     private static Context mApplicationContext;
 
@@ -32,22 +32,18 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
     private SensorManager sensorManager;
 
-    private Sensor gsensor;
-    private Sensor msensor;
+    private final float[] mGravity = new float[3];
+    private final float[] mGeomagnetic = new float[3];
 
-    private float[] mGravity = new float[3];
-    private float[] mGeomagnetic = new float[3];
-
-    private float[] R = new float[9];
-    private float[] I = new float[9];
+    private final float[] R = new float[9];
+    private final float[] I = new float[9];
 
     public CompassHeadingModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        this.reactContext = reactContext;
-
         mApplicationContext = reactContext.getApplicationContext();
     }
 
+    @NonNull
     @Override
     public String getName() {
         return "CompassHeading";
@@ -69,8 +65,8 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
         try{
             sensorManager = (SensorManager) mApplicationContext.getSystemService(Context.SENSOR_SERVICE);
 
-            gsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            msensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+            Sensor gsensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            Sensor msensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
             sensorManager.registerListener(this, gsensor, SensorManager.SENSOR_DELAY_GAME);
             sensorManager.registerListener(this, msensor, SensorManager.SENSOR_DELAY_GAME);
@@ -137,15 +133,23 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
             if (success) {
 
-                float orientation[] = new float[3];
+                float[] orientation = new float[3];
                 SensorManager.getOrientation(R, orientation);
 
                 int newAzimuth = (int) Math.toDegrees(orientation[0]);
                 newAzimuth = (newAzimuth + 360) % 360;
 
-                Display disp = (((WindowManager) mApplicationContext.getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay();
+                Display disp = null;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                    Activity activity = getReactApplicationContext().getCurrentActivity();
+                    if (activity != null) {
+                        disp = activity.getDisplay();
+                    }
+                } else {
+                    disp = (((WindowManager) mApplicationContext.getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay();
+                }
 
-                if(disp != null){
+                if (disp != null) {
                     int rotation = disp.getRotation();
 
                     if(rotation == Surface.ROTATION_90){
@@ -173,13 +177,8 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
                 }
             }
         }
-
-
     }
-
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 }
