@@ -1,7 +1,7 @@
 {
   "name": "react-native-compass-heading",
   "title": "React Native Compass Heading",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Listener to device's compass information.",
   "main": "index.js",
   "scripts": {
