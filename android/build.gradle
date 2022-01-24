@@ -129,12 +129,12 @@ afterEvaluate { project ->
         archives androidJavadocJar
     }
 
-    task installArchives(type: Upload) {
-        configuration = configurations.archives
-        repositories.mavenDeployer {
-            // Deploy to react-native-event-bridge/maven, ready to publish to npm
-            repository url: "file://${projectDir}/../android/maven"
-            configureReactNativePom pom
-        }
-    }
+//    task installArchives(type: Upload) {
+//        configuration = configurations.archives
+//        repositories.maven {
+//            // Deploy to react-native-event-bridge/maven, ready to publish to npm
+//            repository url: "file://${projectDir}/../android/maven"
+//            configureReactNativePom pom
+//        }
+//    }
 }
