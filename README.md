@@ -14,7 +14,7 @@ credits - https://github.com/vnil/react-native-simple-compass
 ```javascript
 import CompassHeading from 'react-native-compass-heading';
 
-  useEffect(() => {
+  React.useEffect(() => {
     const degree_update_rate = 3;
 
     // accuracy on android will be hardcoded to 1
