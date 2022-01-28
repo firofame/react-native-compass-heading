@@ -12,6 +12,8 @@ credits - https://github.com/vnil/react-native-simple-compass
 
 ## Usage
 ```javascript
+import CompassHeading from 'react-native-compass-heading';
+
   useEffect(() => {
     const degree_update_rate = 3;
 
@@ -19,7 +21,7 @@ credits - https://github.com/vnil/react-native-simple-compass
     // since the value is not available.
     // For iOS, it is in degrees
     CompassHeading.start(degree_update_rate, ({heading, accuracy}) => {
-      setCompassHeading(heading);
+      console.log('CompassHeading: ', heading, accuracy);
     });
 
     return () => {
