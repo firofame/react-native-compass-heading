@@ -2,8 +2,6 @@
 
 <img src="android.png" width="40%"> <img src="ios.png" width="40%">
 
-credits - https://github.com/vnil/react-native-simple-compass
-
 ## Installation
 
 `$ yarn add react-native-compass-heading`
@@ -29,3 +27,7 @@ import CompassHeading from 'react-native-compass-heading';
     };
   }, []);
 ```
+
+# Acknowledgements
+
+Thanks to the authors of react-native-simple-compass for inspiration
