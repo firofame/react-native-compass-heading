@@ -1,6 +1,6 @@
 # react-native-compass-heading
 
-<img src="android.png" width="40%"> <img src="ios.png" width="40%">
+React Native module for iOS & Android to receive compass heading
 
 ## Installation
 
