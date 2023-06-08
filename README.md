@@ -4,13 +4,13 @@ React Native module for iOS & Android to receive compass heading
 
 ## Installation
 
-```shell
-$ yarn add react-native-compass-heading
-$ npx pod-install
+```sh
+npm install react-native-compass-heading
 ```
 
 ## Usage
-```javascript
+
+```js
 import CompassHeading from 'react-native-compass-heading';
 
   React.useEffect(() => {
@@ -26,6 +26,14 @@ import CompassHeading from 'react-native-compass-heading';
   }, []);
 ```
 
-## Acknowledgements
+## Contributing
 
-Thanks to the authors of react-native-simple-compass for inspiration
+See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
+
+## License
+
+MIT
+
+---
+
+Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)

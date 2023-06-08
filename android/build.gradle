@@ -1,28 +1,77 @@
-def DEFAULT_COMPILE_SDK_VERSION = 29
-def DEFAULT_TARGET_SDK_VERSION = 29
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
 
-def safeExtGet(prop, fallback) {
-    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+  dependencies {
+    classpath "com.android.tools.build:gradle:7.2.1"
+  }
 }
 
-apply plugin: 'com.android.library'
+def isNewArchitectureEnabled() {
+  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+}
 
+apply plugin: "com.android.library"
+
+
+def appProject = rootProject.allprojects.find { it.plugins.hasPlugin('com.android.application') }
+
+if (isNewArchitectureEnabled()) {
+  apply plugin: "com.facebook.react"
+}
+
+def getExtOrDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["CompassHeading_" + name]
+}
+
+def getExtOrIntegerDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["CompassHeading_" + name]).toInteger()
+}
 
 android {
-    compileSdkVersion safeExtGet('compileSdkVersion', DEFAULT_COMPILE_SDK_VERSION)
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
 
-    defaultConfig {
-        minSdkVersion safeExtGet('minSdkVersion', 16)
-        targetSdkVersion safeExtGet('targetSdkVersion', DEFAULT_TARGET_SDK_VERSION)
-        versionCode 1
-        versionName "1.0"
+  defaultConfig {
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
     }
+  }
+
+  lintOptions {
+    disable "GradleCompatible"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+
 }
 
-repositories{
-    mavenCentral()
+repositories {
+  mavenCentral()
+  google()
 }
+
 
 dependencies {
-    implementation "com.facebook.react:react-native:${safeExtGet('reactNativeVersion', '+')}"
+  // For < 0.71, this will be from the local maven repo
+  // For > 0.71, this will be replaced by `com.facebook.react:react-android:$version` by react gradle plugin
+  //noinspection GradleDynamicVersion
+  implementation "com.facebook.react:react-native:+"
+}
+
+if (isNewArchitectureEnabled()) {
+  react {
+    jsRootDir = file("../src/")
+    libraryName = "CompassHeading"
+    codegenJavaPackageName = "com.compassheading"
+  }
 }
