@@ -10,11 +10,16 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: 16
-          registry-url: https://registry.npmjs.org/
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build package
+        run: yarn prepack
+
+      - name: Publish to npm
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
