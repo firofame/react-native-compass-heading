@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-npm:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -15,7 +15,7 @@ jobs:
       - name: Build package
         run: yarn prepack
 
-      - name: Publish to npm
+      - name: Publish NPM package
         run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
+          NPM_CONFIG_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
