@@ -1,5 +1,5 @@
 {
-  "name": "@firofame/react-native-compass-heading",
+  "name": "react-native-compass-heading",
   "version": "1.5.0",
   "description": "Listener to device's compass information.",
   "main": "lib/commonjs/index",
