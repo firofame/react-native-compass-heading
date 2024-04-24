@@ -32,6 +32,14 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
   private int mFilter = 1;
 
   private SensorManager sensorManager;
+  /**
+   * Possible values.
+   * 0 -> sensorManager.SENSOR_STATUS_UNRELIABLE
+   * 1 -> sensorManager.SENSOR_STATUS_ACCURACY_LOW
+   * 2 -> sensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
+   * 3 -> sensorManager.SENSOR_STATUS_ACCURACY_HIGH
+   */
+  private int mAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM;
 
   private final float[] mGravity = new float[3];
   private final float[] mGeomagnetic = new float[3];
@@ -174,7 +182,7 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
 
           WritableMap params = Arguments.createMap();
           params.putDouble("heading", mAzimuth);
-          params.putDouble("accuracy", 1.0);
+          params.putDouble("accuracy", mAccuracy);
 
           getReactApplicationContext()
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
@@ -185,5 +193,17 @@ public class CompassHeadingModule extends ReactContextBaseJavaModule implements 
   }
 
   @Override
-  public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+  public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    if (sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+      mAccuracy = accuracy;
+      WritableMap params = Arguments.createMap();
+      params.putDouble("heading", mAzimuth);
+      params.putDouble("accuracy", mAccuracy);
+
+      getReactApplicationContext()
+        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+        .emit("HeadingUpdated", params);
+    }
+  }
 }
