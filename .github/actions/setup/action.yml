@@ -1,6 +1,5 @@
 name: Setup
 description: Setup Node.js and install dependencies
-
 runs:
   using: composite
   steps:
@@ -8,7 +7,6 @@ runs:
       uses: actions/setup-node@v3
       with:
         node-version-file: .nvmrc
-
     - name: Cache dependencies
       id: yarn-cache
       uses: actions/cache@v3
@@ -18,7 +16,6 @@ runs:
         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-yarn-
-
     - name: Install dependencies
       if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: |
