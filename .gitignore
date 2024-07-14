@@ -39,6 +39,8 @@ project.xcworkspace
 .settings
 local.properties
 android.iml
+android/gradlew
+android/gradlew.bat
 
 # Cocoapods
 #

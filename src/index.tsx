@@ -23,6 +23,18 @@ let _start = CompassHeading.start;
 
 type dataType = {
   heading: number;
+  /**
+   * for Android:
+   * 0 -> sensorManager.SENSOR_STATUS_UNRELIABLE
+   * 1 -> sensorManager.SENSOR_STATUS_ACCURACY_LOW
+   * 2 -> sensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
+   * 3 -> sensorManager.SENSOR_STATUS_ACCURACY_HIGH
+   * https://developer.android.com/reference/android/hardware/SensorManager
+   *
+   * for iOS:
+   * in degree of the offset
+   * https://developer.apple.com/documentation/corelocation/clheading
+   */
   accuracy: number;
 };
 
