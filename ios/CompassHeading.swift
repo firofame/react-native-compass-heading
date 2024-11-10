@@ -1,4 +1,3 @@
-// ios/CompassHeading.swift
 import Foundation
 import CoreLocation
 import React
@@ -13,17 +12,30 @@ class CompassHeading: RCTEventEmitter, CLLocationManagerDelegate {
         locationManager = CLLocationManager()
         locationManager?.delegate = self
         locationManager?.headingFilter = 1  // Default update rate
+        locationManager?.desiredAccuracy = kCLLocationAccuracyNearestTenMeters // Optional: Set accuracy
     }
 
     @objc
     func start(_ degreeUpdateRate: Double) {
         locationManager?.headingFilter = degreeUpdateRate
-        locationManager?.startUpdatingHeading()
+        
+        if hasListeners {
+            if CLLocationManager.locationServicesEnabled() {
+                locationManager?.requestWhenInUseAuthorization()
+                locationManager?.startUpdatingHeading()
+            } else {
+                NSLog("CompassHeading: Location services are not enabled.")
+            }
+        } else {
+            NSLog("CompassHeading: No listeners, not starting heading updates.")
+        }
     }
 
     @objc
     func stop() {
-        locationManager?.stopUpdatingHeading()
+        if hasListeners {
+            locationManager?.stopUpdatingHeading()
+        }
     }
 
     override func supportedEvents() -> [String]! {
@@ -32,10 +44,21 @@ class CompassHeading: RCTEventEmitter, CLLocationManagerDelegate {
 
     override func startObserving() {
         hasListeners = true
+        // Start updating heading only when a listener is active
+        if CLLocationManager.locationServicesEnabled() {
+            locationManager?.requestWhenInUseAuthorization()
+            locationManager?.startUpdatingHeading()
+        } else {
+            NSLog("CompassHeading: Location services are not enabled.")
+        }
     }
 
     override func stopObserving() {
         hasListeners = false
+        // Stop updating heading when no listeners are active
+        if !hasListeners {
+            locationManager?.stopUpdatingHeading()
+        }
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
@@ -45,6 +68,8 @@ class CompassHeading: RCTEventEmitter, CLLocationManagerDelegate {
                 "accuracy": newHeading.headingAccuracy
             ]
             sendEvent(withName: "HeadingUpdated", body: headingData)
+        } else {
+            NSLog("CompassHeading: No listeners, skipping heading update.")
         }
     }
 
