@@ -1,53 +1,34 @@
 // src/index.tsx
-import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
-import { useEffect } from 'react';
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
 const { CompassHeading } = NativeModules;
+const compassEventEmitter = new NativeEventEmitter(CompassHeading);
 
-type CompassHeadingEvent = {
-  heading: number;
-  accuracy: number;
-};
+type CallbackType = (heading: number, accuracy: number) => void;
 
-type CompassHeadingType = {
-  start: (degreeUpdateRate: number, callback: (event: CompassHeadingEvent) => void) => void;
-  stop: () => void;
-};
+const CompassHeadingModule = {
+  start: (degreeUpdateRate: number, callback: CallbackType): void => {
+    CompassHeading.start(degreeUpdateRate);
 
-const compassHeading: CompassHeadingType = {
-  start: (degreeUpdateRate, callback) => {
-    if (Platform.OS === 'ios' || Platform.OS === 'android') {
-      CompassHeading.start(degreeUpdateRate);
-      const eventEmitter = new NativeEventEmitter(CompassHeading);
-      const subscription = eventEmitter.addListener('HeadingUpdated', callback);
+    const subscription = compassEventEmitter.addListener(
+      'HeadingUpdated',
+      ({ heading, accuracy }) => {
+        callback(heading, accuracy);
+      }
+    );
 
-      // Cleanup listener
-      return () => {
-        subscription.remove();
-        CompassHeading.stop();
-      };
-    } else {
-      console.warn('CompassHeading is only available on iOS and Android platforms.');
-    }
+    // Set up `unsubscribe` function to stop listening when needed
+    const unsubscribe = () => {
+      subscription.remove();
+      CompassHeading.stop();
+    };
+
+    return unsubscribe();
   },
 
-  stop: () => {
-    if (Platform.OS === 'ios' || Platform.OS === 'android') {
-      CompassHeading.stop();
-    }
-  }
+  stop: (): void => {
+    CompassHeading.stop();
+  },
 };
 
-export default compassHeading;
-
-// Usage in a React component
-export const useCompassHeading = (degreeUpdateRate: number, callback: (event: CompassHeadingEvent) => void) => {
-  useEffect(() => {
-    const unsubscribe = compassHeading.start(degreeUpdateRate, callback);
-
-    // Clean up the effect by stopping the compass updates when component unmounts
-    return () => {
-      unsubscribe?.();
-    };
-  }, [degreeUpdateRate, callback]);
-};
+export default CompassHeadingModule;
