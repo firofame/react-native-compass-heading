@@ -1,4 +1,38 @@
 {
   "name": "CompassHeadingExample",
-  "displayName": "CompassHeadingExample"
+  "displayName": "CompassHeadingExample",
+  "components": [
+    {
+      "appKey": "CompassHeadingExample",
+      "displayName": "CompassHeadingExample"
+    }
+  ],
+  "resources": {
+    "android": [
+      "dist/res",
+      "dist/main.android.jsbundle"
+    ],
+    "ios": [
+      "dist/assets",
+      "dist/main.ios.jsbundle"
+    ],
+    "macos": [
+      "dist/assets",
+      "dist/main.macos.jsbundle"
+    ],
+    "visionos": [
+      "dist/assets",
+      "dist/main.visionos.jsbundle"
+    ],
+    "windows": [
+      "dist/assets",
+      "dist/main.windows.bundle"
+    ]
+  },
+  "android": {
+    "package": "compassheading.example"
+  },
+  "ios": {
+    "bundleIdentifier": "compassheading.example"
+  }
 }

@@ -1,37 +1,30 @@
-import { View, Text, StyleSheet } from 'react-native';
-import React, { useState } from 'react';
-import CompassHeading from 'react-native-compass-heading';
+import { useState, useEffect } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
+import { multiply } from 'react-native-compass-heading';
+
+export default function App() {
+  const [result, setResult] = useState<number | undefined>();
+
+  useEffect(() => {
+    multiply(3, 7).then(setResult);
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Text>Result: {result}</Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  box: {
+    width: 60,
+    height: 60,
+    marginVertical: 20,
   },
 });
-
-const App = () => {
-  const [heading, setHeading] = useState(0);
-  const [accuracy, setAccuracy] = useState(0);
-
-  React.useEffect(() => {
-    const degree_update_rate = 3;
-
-    CompassHeading.start(degree_update_rate, (data) => {
-      setHeading(data.heading);
-      setAccuracy(data.accuracy);
-    });
-
-    return () => {
-      CompassHeading.stop();
-    };
-  }, []);
-  return (
-    <View style={styles.container}>
-      <Text>{'heading: ' + heading}</Text>
-      <Text>{'accuracy: ' + accuracy}</Text>
-    </View>
-  );
-};
-
-export default App;

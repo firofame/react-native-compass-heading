@@ -1,55 +1,53 @@
+// src/index.tsx
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
+import { useEffect } from 'react';
 
-const LINKING_ERROR =
-  `The package 'react-native-compass-heading' doesn't seem to be linked. Make sure: \n\n` +
-  Platform.select({ ios: "- You have run 'pod install'\n", default: '' }) +
-  '- You rebuilt the app after installing the package\n' +
-  '- You are not using Expo Go\n';
+const { CompassHeading } = NativeModules;
 
-const CompassHeading = NativeModules.CompassHeading
-  ? NativeModules.CompassHeading
-  : new Proxy(
-      {},
-      {
-        get() {
-          throw new Error(LINKING_ERROR);
-        },
-      }
-    );
-
-let listener: { remove: () => any } | null;
-
-let _start = CompassHeading.start;
-
-type dataType = {
+type CompassHeadingEvent = {
   heading: number;
   accuracy: number;
 };
 
-CompassHeading.start = async (
-  update_rate: number,
-  callback: (data: dataType) => void
-) => {
-  if (listener) {
-    await CompassHeading.stop();
-  }
+type CompassHeadingType = {
+  start: (degreeUpdateRate: number, callback: (event: CompassHeadingEvent) => void) => void;
+  stop: () => void;
+};
 
-  const compassEventEmitter = new NativeEventEmitter(CompassHeading);
-  listener = compassEventEmitter.addListener(
-    'HeadingUpdated',
-    (data: dataType) => {
-      callback(data);
+const compassHeading: CompassHeadingType = {
+  start: (degreeUpdateRate, callback) => {
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      CompassHeading.start(degreeUpdateRate);
+      const eventEmitter = new NativeEventEmitter(CompassHeading);
+      const subscription = eventEmitter.addListener('HeadingUpdated', callback);
+
+      // Cleanup listener
+      return () => {
+        subscription.remove();
+        CompassHeading.stop();
+      };
+    } else {
+      console.warn('CompassHeading is only available on iOS and Android platforms.');
     }
-  );
+  },
 
-  return await _start(update_rate === null ? 0 : update_rate);
+  stop: () => {
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      CompassHeading.stop();
+    }
+  }
 };
 
-let _stop = CompassHeading.stop;
-CompassHeading.stop = async () => {
-  listener && listener.remove();
-  listener = null;
-  await _stop();
-};
+export default compassHeading;
 
-export default CompassHeading;
+// Usage in a React component
+export const useCompassHeading = (degreeUpdateRate: number, callback: (event: CompassHeadingEvent) => void) => {
+  useEffect(() => {
+    const unsubscribe = compassHeading.start(degreeUpdateRate, callback);
+
+    // Clean up the effect by stopping the compass updates when component unmounts
+    return () => {
+      unsubscribe?.();
+    };
+  }, [degreeUpdateRate, callback]);
+};
