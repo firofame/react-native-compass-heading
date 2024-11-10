@@ -1,7 +1,3 @@
-type CallbackType = (heading: number, accuracy: number) => void;
-declare const CompassHeadingModule: {
-    start: (degreeUpdateRate: number, callback: CallbackType) => void;
-    stop: () => void;
-};
-export default CompassHeadingModule;
+declare const CompassHeading: any;
+export default CompassHeading;
 //# sourceMappingURL=index.d.ts.map
