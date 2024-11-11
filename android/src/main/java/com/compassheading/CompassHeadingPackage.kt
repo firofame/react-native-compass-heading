@@ -1,4 +1,3 @@
-// android/src/main/java/com/compassheading/CompassHeadingPackage.kt
 package com.compassheading
 
 import com.facebook.react.ReactPackage
@@ -7,7 +6,6 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
 
 class CompassHeadingPackage : ReactPackage {
-
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
         return listOf(CompassHeadingModule(reactContext))
     }
