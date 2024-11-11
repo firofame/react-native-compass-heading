@@ -6,12 +6,14 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.util.Log
 import android.view.Surface
+import android.view.Display
 import android.view.WindowManager
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import kotlin.math.abs
-import kotlin.math.toDegrees
+import kotlin.math.PI
 
 class CompassHeadingModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext), SensorEventListener {
@@ -56,8 +58,10 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
             sensorManager?.registerListener(this, msensor, SensorManager.SENSOR_DELAY_GAME)
 
             mFilter = filter
+            Log.d(NAME, "Compass heading started with filter: $mFilter")
             promise.resolve(true)
         } catch (e: Exception) {
+            Log.e(NAME, "Failed to start compass heading: ${e.message}")
             promise.reject("failed_start", e.message)
         }
     }
@@ -65,6 +69,7 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun stop() {
         sensorManager?.unregisterListener(this)
+        Log.d(NAME, "Compass heading stopped")
     }
 
     @ReactMethod
@@ -75,6 +80,7 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
                     manager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null
             promise.resolve(hasCompass)
         } catch (e: Exception) {
+            Log.e(NAME, "Error checking for compass: ${e.message}")
             promise.resolve(false)
         }
     }
@@ -99,8 +105,9 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
             if (success) {
                 val orientation = FloatArray(3)
                 SensorManager.getOrientation(R, orientation)
-                var newAzimuth = toDegrees(orientation[0].toDouble()).toInt()
-                newAzimuth = (newAzimuth + 360) % 360
+                var newAzimuth = calculateHeading(orientation[0])
+
+                Log.d(NAME, "Raw azimuth: $newAzimuth")
 
                 val display = getDisplay()
                 display?.let {
@@ -113,8 +120,10 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
                     }
                 }
 
+                Log.d(NAME, "Adjusted azimuth after rotation: $newAzimuth")
+
                 if (abs(mAzimuth - newAzimuth) > mFilter) {
-                    mAzimuth = newAzimuth
+                    mAzimuth = newAzimuth.toInt()
                     val params = Arguments.createMap().apply {
                         putDouble("heading", mAzimuth.toDouble())
                         putDouble("accuracy", 1.0)
@@ -122,6 +131,7 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
                     reactApplicationContext
                         .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
                         .emit("HeadingUpdated", params)
+                    Log.d(NAME, "Emitting HeadingUpdated event with azimuth: $mAzimuth")
                 }
             }
         }
@@ -131,10 +141,14 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
 
     private fun getDisplay(): Display? {
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            val activity = reactApplicationContext.currentActivity
-            activity?.display
+            reactApplicationContext.currentActivity?.display
         } else {
             (mApplicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
         }
+    }
+
+    private fun calculateHeading(azimuth: Float): Double {
+        // Convert azimuth from radians to degrees manually
+        return (360 - (azimuth * (180 / PI.toFloat()))).mod(360.0)
     }
 }
