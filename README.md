@@ -5,7 +5,7 @@ React Native module for iOS & Android to receive compass heading
 ## Installation
 
 ```sh
-yarn add install react-native-compass-heading
+yarn add react-native-compass-heading
 ```
 
 ## Usage
