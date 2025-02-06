@@ -25,7 +25,6 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
     private val mApplicationContext: Context = reactContext.applicationContext
     private var mAzimuth: Int = 0 // degree
     private var mFilter: Int = 1
-
     private var sensorManager: SensorManager? = null
     private val mGravity = FloatArray(3)
     private val mGeomagnetic = FloatArray(3)
@@ -50,13 +49,10 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
     fun start(filter: Int, promise: Promise) {
         try {
             sensorManager = mApplicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-
             val gsensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
             val msensor = sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-
             sensorManager?.registerListener(this, gsensor, SensorManager.SENSOR_DELAY_GAME)
             sensorManager?.registerListener(this, msensor, SensorManager.SENSOR_DELAY_GAME)
-
             mFilter = filter
             Log.d(NAME, "Compass heading started with filter: $mFilter")
             promise.resolve(true)
@@ -113,10 +109,10 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
                 display?.let {
                     val rotation = it.rotation
                     newAzimuth = when (rotation) {
-                        Surface.ROTATION_90 -> (newAzimuth + 90) % 360
-                        Surface.ROTATION_270 -> (newAzimuth + 270) % 360
-                        Surface.ROTATION_180 -> (newAzimuth + 180) % 360
-                        else -> newAzimuth
+                        Surface.ROTATION_90 -> (newAzimuth + 270) % 360 // Fix for landscape-right
+                        Surface.ROTATION_270 -> (newAzimuth + 90) % 360 // Fix for landscape-left
+                        Surface.ROTATION_180 -> (newAzimuth + 180) % 360 // Fix for upside-down
+                        else -> newAzimuth // Default for portrait
                     }
                 }
 
@@ -148,7 +144,13 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
     }
 
     private fun calculateHeading(azimuth: Float): Double {
-        // Convert azimuth from radians to degrees manually
-        return (360 - (azimuth * (180 / PI.toFloat()))).mod(360.0)
+        // Convert azimuth from radians to degrees
+        var heading = Math.toDegrees(azimuth.toDouble())
+
+        // Normalize the heading to [0, 360)
+        if (heading < 0) {
+            heading += 360
+        }
+        return heading
     }
 }
