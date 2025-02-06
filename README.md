@@ -12,19 +12,29 @@ yarn add react-native-compass-heading
 
 
 ```js
+import { View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import CompassHeading from 'react-native-compass-heading';
 
-  React.useEffect(() => {
+export default function App() {
+  const [headingValue, setHeadingValue] = useState(0);
+  useEffect(() => {
     const degree_update_rate = 3;
 
-    CompassHeading.start(degree_update_rate, ({heading, accuracy}) => {
-      console.log('CompassHeading: ', heading, accuracy);
-    });
+      CompassHeading.start(degree_update_rate, ({heading, accuracy}) => {
+        setHeadingValue(heading);
+      });
 
     return () => {
       CompassHeading.stop();
     };
   }, []);
+  return (
+    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white'}}>
+      <Text>{headingValue}</Text>
+    </View>
+  );
+}
 ```
 
 
