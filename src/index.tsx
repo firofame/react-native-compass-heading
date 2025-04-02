@@ -30,10 +30,8 @@ CompassHeading.start = async (
   update_rate: number,
   callback: (data: dataType) => void
 ) => {
-  console.log('CompassHeading.start called with update rate:', update_rate);
 
   if (listener) {
-    console.log('Removing existing listener before starting...');
     await CompassHeading.stop(); // Clean up previous listener
   }
 
@@ -41,25 +39,21 @@ CompassHeading.start = async (
   listener = compassEventEmitter.addListener(
     'HeadingUpdated',
     (data: dataType) => {
-      console.log('Received heading update:', data); // Debug incoming data
       callback(data);
     }
   );
 
   const result = await _start(update_rate === null ? 0 : update_rate);
-  console.log('CompassHeading started successfully');
   return result;
 };
 
 let _stop = CompassHeading.stop;
 CompassHeading.stop = async () => {
   if (listener) {
-    console.log('Removing listener and stopping updates...');
     listener.remove();
     listener = null;
   }
   await _stop();
-  console.log('CompassHeading stopped successfully');
 };
 
 export default CompassHeading;
