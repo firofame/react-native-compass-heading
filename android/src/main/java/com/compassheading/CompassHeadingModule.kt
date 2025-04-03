@@ -109,8 +109,8 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
                 display?.let {
                     val rotation = it.rotation
                     newAzimuth = when (rotation) {
-                        Surface.ROTATION_90 -> (newAzimuth + 270) % 360 // Fix for landscape-right
-                        Surface.ROTATION_270 -> (newAzimuth + 90) % 360 // Fix for landscape-left
+                        Surface.ROTATION_90 -> (newAzimuth + 90) % 360 // Fix for landscape-right
+                        Surface.ROTATION_270 -> (newAzimuth + 270) % 360 // Fix for landscape-left
                         Surface.ROTATION_180 -> (newAzimuth + 180) % 360 // Fix for upside-down
                         else -> newAzimuth // Default for portrait
                     }
