@@ -1,59 +1,51 @@
-import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
+import type { EventSubscription } from 'react-native';
+import NativeCompassHeading, { type HeadingData } from './NativeCompassHeading';
 
-const LINKING_ERROR =
-  `The package 'react-native-compass-heading' doesn't seem to be linked. Make sure: \n\n` +
-  Platform.select({ ios: "- You have run 'pod install'\n", default: '' }) +
-  '- You rebuilt the app after installing the package\n' +
-  '- You are not using Expo Go\n';
+export type { HeadingData } from './NativeCompassHeading';
 
-const CompassHeading = NativeModules.CompassHeading
-  ? NativeModules.CompassHeading
-  : new Proxy(
-      {},
-      {
-        get() {
-          throw new Error(LINKING_ERROR);
-        },
-      }
+let listener: EventSubscription | undefined;
+
+async function start(
+  degreeUpdateRate: number | null,
+  callback: (data: HeadingData) => void
+): Promise<boolean> {
+  const rate = degreeUpdateRate ?? 0;
+  if (!Number.isFinite(rate) || rate < 0) {
+    throw new RangeError(
+      'degreeUpdateRate must be a finite, non-negative number'
     );
-
-let listener: { remove: () => any } | null = null;
-
-let _start = CompassHeading.start;
-
-type dataType = {
-  heading: number;
-  accuracy: number;
-};
-
-CompassHeading.start = async (
-  update_rate: number,
-  callback: (data: dataType) => void
-) => {
-
-  if (listener) {
-    await CompassHeading.stop(); // Clean up previous listener
   }
-
-  const compassEventEmitter = new NativeEventEmitter(CompassHeading);
-  listener = compassEventEmitter.addListener(
-    'HeadingUpdated',
-    (data: dataType) => {
-      callback(data);
-    }
-  );
-
-  const result = await _start(update_rate === null ? 0 : update_rate);
-  return result;
-};
-
-let _stop = CompassHeading.stop;
-CompassHeading.stop = async () => {
+  if (typeof callback !== 'function') {
+    throw new TypeError('callback must be a function');
+  }
   if (listener) {
     listener.remove();
-    listener = null;
+    listener = undefined;
+    NativeCompassHeading.stop();
   }
-  await _stop();
-};
 
-export default CompassHeading;
+  const subscription = NativeCompassHeading.onHeadingUpdated(callback);
+  listener = subscription;
+  try {
+    return await NativeCompassHeading.start(rate);
+  } catch (error) {
+    if (listener === subscription) {
+      subscription.remove();
+      listener = undefined;
+      NativeCompassHeading.stop();
+    }
+    throw error;
+  }
+}
+
+async function stop(): Promise<void> {
+  listener?.remove();
+  listener = undefined;
+  NativeCompassHeading.stop();
+}
+
+export default {
+  start,
+  stop,
+  hasCompass: (): Promise<boolean> => NativeCompassHeading.hasCompass(),
+};
