@@ -1,7 +1,7 @@
 PODS:
   - boost (1.84.0):
     - ReactNativeDependencies
-  - CompassHeading (2.0.2):
+  - CompassHeading (3.0.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2038,7 +2038,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   boost: 8502bfdc46e2804408af2e163049ece181009af4
-  CompassHeading: c90fd3cb0a246c3d2cbc144fd618c40e1615a417
+  CompassHeading: 153a09cf1541e0f4c2ed04704e17f67a0091ad4a
   DoubleConversion: 501a575c40c0b50c89685762dd3e415e6bb26fb0
   fast_float: 7c925d1cebf8328d4018d061f49377e9f887e3b4
   FBLazyVector: fdebac2dfe9c53bca49f8218fbdf1e24e36c8be0

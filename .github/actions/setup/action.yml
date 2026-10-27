@@ -1,6 +1,12 @@
 name: Setup
 description: Setup Node.js and install dependencies
 
+inputs:
+  registry-url:
+    description: Optional npm registry for package authentication
+    required: false
+    default: ''
+
 runs:
   using: composite
   steps:
@@ -8,6 +14,7 @@ runs:
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version-file: .nvmrc
+        registry-url: ${{ inputs.registry-url }}
 
     - name: Restore dependencies
       id: yarn-cache

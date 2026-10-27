@@ -108,14 +108,34 @@ Our pre-commit hooks verify that your commit message matches this format when co
 
 ### Publishing to npm
 
-We use [release-it](https://github.com/release-it/release-it) to make it easier to publish new versions. It handles common tasks like bumping version based on semver, creating tags and releases etc.
+We use [release-it](https://github.com/release-it/release-it) to bump the package
+version, create a version commit and tag, push them, and create a GitHub release.
+The [publishing workflow](./.github/workflows/publish.yml) publishes to
+[npmjs](https://www.npmjs.com/package/react-native-compass-heading) automatically
+when a version tag such as `v3.0.0` is pushed. Normal branch pushes do not publish.
 
-To publish new versions, run the following:
+From an up-to-date, clean `master` branch, set `GITHUB_TOKEN` locally with
+permission to create GitHub releases, then run:
 
 ```sh
 yarn release
 ```
 
+Version `3.0.0` introduces the New Architecture requirement and is a breaking
+change from `2.x`.
+
+The tag must exactly match `v` followed by the version in `package.json`. The
+workflow runs lint, typechecking, unit tests, and the package build before
+publishing. Stable versions use npm's `latest` tag; prereleases use `next`.
+
+The repository's Actions secret `NODE_AUTH_TOKEN` must contain a valid npm token
+with write access to this package and permission to bypass publishing 2FA.
+Publishing includes npm provenance. The token is exposed only to the publishing
+step, not dependency installation or tests.
+
+Local npm publishing in `release-it` is disabled to avoid publishing the same
+version both locally and in Actions. Each release needs a new package version;
+npm does not allow overwriting a version that has already been published.
 
 ### Scripts
 
