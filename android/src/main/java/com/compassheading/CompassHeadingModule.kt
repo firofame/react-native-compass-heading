@@ -16,7 +16,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.view.Surface
 import android.view.WindowManager
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
@@ -35,7 +34,9 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
   private val gravity = FloatArray(3)
   private val geomagnetic = FloatArray(3)
   private val rotationMatrix = FloatArray(9)
-  private val orientation = FloatArray(3)
+  private var usingRotationVector = false
+  private var hasGravity = false
+  private var hasGeomagnetic = false
   private var lastHeading: Double? = null
   private var updateRate = 1.0
   private var updating = false
@@ -54,15 +55,20 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
     }
     stop()
     val manager = sensorManager
+    val rotationSensor = manager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
     val accelerometer = manager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     val magnetometer = manager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
-    if (manager == null || accelerometer == null || magnetometer == null) {
+    if (manager == null ||
+      (rotationSensor == null && (accelerometer == null || magnetometer == null))
+    ) {
       promise.reject("not_available", "This device does not have a compass")
       return
     }
 
     gravity.fill(0f)
     geomagnetic.fill(0f)
+    hasGravity = false
+    hasGeomagnetic = false
     lastHeading = null
     updateRate = degreeUpdateRate
     this.useTrueNorth = useTrueNorth
@@ -121,11 +127,13 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
       locationTimeout = timeout
       handler.postDelayed(timeout, 30_000L)
     }
-    val gravityRegistered =
-      manager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
-    val magneticRegistered =
-      manager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_GAME)
-    if (!gravityRegistered || !magneticRegistered) {
+    usingRotationVector = rotationSensor != null &&
+      manager.registerListener(this, rotationSensor, SensorManager.SENSOR_DELAY_GAME)
+    val sensorsRegistered = usingRotationVector ||
+      (accelerometer != null && magnetometer != null &&
+        manager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME) &&
+        manager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_GAME))
+    if (!sensorsRegistered) {
       stop()
       promise.reject("failed_start", "Could not register compass sensor listeners")
       return
@@ -137,6 +145,7 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
   override fun stop() {
     ++generation
     updating = false
+    usingRotationVector = false
     sensorManager?.unregisterListener(this)
     locationManager?.removeUpdates(this)
     locationTimeout?.let { handler.removeCallbacks(it) }
@@ -194,8 +203,9 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
 
   override fun hasCompass(promise: Promise) {
     promise.resolve(
-      sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null &&
-        sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null
+      sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null ||
+        (sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null &&
+          sensorManager?.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) != null)
     )
   }
 
@@ -207,34 +217,44 @@ class CompassHeadingModule(reactContext: ReactApplicationContext) :
       return
     }
 
-    val values = when (event.sensor.type) {
-      Sensor.TYPE_ACCELEROMETER -> gravity
-      Sensor.TYPE_MAGNETIC_FIELD -> geomagnetic
-      else -> return
+    if (usingRotationVector) {
+      if (event.sensor.type != Sensor.TYPE_ROTATION_VECTOR) return
+      SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+    } else {
+      val values: FloatArray
+      val initialized: Boolean
+      when (event.sensor.type) {
+        Sensor.TYPE_ACCELEROMETER -> {
+          values = gravity
+          initialized = hasGravity
+          hasGravity = true
+        }
+        Sensor.TYPE_MAGNETIC_FIELD -> {
+          values = geomagnetic
+          initialized = hasGeomagnetic
+          hasGeomagnetic = true
+        }
+        else -> return
+      }
+      val alpha = if (initialized) 0.97f else 0f
+      for (index in 0..2) {
+        values[index] = alpha * values[index] + (1 - alpha) * event.values[index]
+      }
+      if (!hasGravity || !hasGeomagnetic ||
+        !SensorManager.getRotationMatrix(rotationMatrix, null, gravity, geomagnetic)
+      ) return
     }
-    val alpha = 0.97f
-    for (index in 0..2) {
-      values[index] = alpha * values[index] + (1 - alpha) * event.values[index]
-    }
-    if (!SensorManager.getRotationMatrix(rotationMatrix, null, gravity, geomagnetic)) return
 
-    SensorManager.getOrientation(rotationMatrix, orientation)
-    val azimuth = (Math.toDegrees(orientation[0].toDouble()) + 360) % 360
     val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       reactApplicationContext.currentActivity?.display
     } else {
       @Suppress("DEPRECATION")
       (reactApplicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
     }
-    val offset = when (display?.rotation) {
-      Surface.ROTATION_90 -> 90
-      Surface.ROTATION_180 -> 180
-      Surface.ROTATION_270 -> 270
-      else -> 0
-    }
     val correction = if (useTrueNorth) declination ?: return else 0.0
-    var heading = (azimuth + offset + correction) % 360
-    if (heading < 0) heading += 360
+    val heading = CompassHeadingMath.heading(
+      rotationMatrix, display?.rotation ?: 0, correction
+    ) ?: return
     if (useTrueNorth) {
       receivedTrueHeading = true
       locationTimeout?.let { handler.removeCallbacks(it) }

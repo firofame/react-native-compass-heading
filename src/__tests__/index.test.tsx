@@ -347,6 +347,21 @@ describe('CompassHeading', () => {
     expect(callbacks.size).toBe(1);
   });
 
+  it.each(['not_available', 'failed_start'])(
+    'propagates native sensor error %s and removes both subscriptions',
+    async (code) => {
+      const failure = Object.assign(new Error('Cannot start compass sensors'), {
+        code,
+      });
+      native.start.mockRejectedValueOnce(failure);
+
+      await expect(CompassHeading.start(3, jest.fn())).rejects.toBe(failure);
+      expect(callbacks.size).toBe(0);
+      expect(errorCallbacks.size).toBe(0);
+      expect(native.stop).toHaveBeenCalledTimes(1);
+    }
+  );
+
   it('does not remove a replacement listener when an earlier start fails', async () => {
     const pending = Promise.withResolvers<boolean>();
     native.start.mockReturnValueOnce(pending.promise);

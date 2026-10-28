@@ -89,6 +89,19 @@ Remember to add tests for your change if possible. Run the unit tests by:
 yarn test
 ```
 
+Run the Android heading-math regression tests (no emulator required):
+
+```sh
+cd example/android
+./gradlew :react-native-compass-heading:testDebugUnitTest --no-daemon --console=plain
+```
+
+These cover all display rotations, tilted landscape headings, true-north
+normalization, and undefined vertical headings. Native sensor accuracy still
+requires physical-device testing: verify flat and tilted portrait/landscape
+readings, sensor availability, and both north-reference modes. In particular,
+Samsung-specific accuracy reports cannot be verified with JVM tests alone.
+
 CI runs on pushes to `master`, pull requests targeting `master`, and merge queue
 checks.
 

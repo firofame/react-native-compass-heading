@@ -73,6 +73,7 @@ useTrueNorth:(BOOL)useTrueNorth
 {
   // Filter after orientation adjustment, including orientation-only updates.
   _locationManager.headingFilter = kCLHeadingFilterNone;
+  [self updateHeadingOrientation];
   if (!_observingOrientation) {
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(orientationDidChange:)
@@ -190,9 +191,43 @@ useTrueNorth:(BOOL)useTrueNorth
   [self sendHeading:newHeading];
 }
 
+- (BOOL)updateHeadingOrientation
+{
+  CLDeviceOrientation orientation = CLDeviceOrientationPortrait;
+  for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+    if (![scene isKindOfClass:UIWindowScene.class] ||
+        scene.activationState != UISceneActivationStateForegroundActive) {
+      continue;
+    }
+    switch (((UIWindowScene *)scene).interfaceOrientation) {
+      case UIInterfaceOrientationPortraitUpsideDown:
+        orientation = CLDeviceOrientationPortraitUpsideDown;
+        break;
+      case UIInterfaceOrientationLandscapeLeft:
+        orientation = CLDeviceOrientationLandscapeRight;
+        break;
+      case UIInterfaceOrientationLandscapeRight:
+        orientation = CLDeviceOrientationLandscapeLeft;
+        break;
+      default:
+        break;
+    }
+    break;
+  }
+  if (_locationManager.headingOrientation == orientation) {
+    return NO;
+  }
+  _locationManager.headingOrientation = orientation;
+  return YES;
+}
+
 - (void)sendHeading:(CLHeading *)heading
 {
   if (!_updating || heading == nil || heading.headingAccuracy < 0) {
+    return;
+  }
+  if ([self updateHeadingOrientation]) {
+    // This sample was calculated for the old orientation; wait for a fresh one.
     return;
   }
 
@@ -203,26 +238,6 @@ useTrueNorth:(BOOL)useTrueNorth
     _receivedTrueHeading = YES;
   }
   double adjustedHeading = _useTrueNorth ? heading.trueHeading : heading.magneticHeading;
-  for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-    if (![scene isKindOfClass:UIWindowScene.class] ||
-        scene.activationState != UISceneActivationStateForegroundActive) {
-      continue;
-    }
-    switch (((UIWindowScene *)scene).interfaceOrientation) {
-      case UIInterfaceOrientationPortraitUpsideDown:
-        adjustedHeading += 180;
-        break;
-      case UIInterfaceOrientationLandscapeLeft:
-        adjustedHeading -= 90;
-        break;
-      case UIInterfaceOrientationLandscapeRight:
-        adjustedHeading += 90;
-        break;
-      default:
-        break;
-    }
-    break;
-  }
   adjustedHeading = std::fmod(adjustedHeading + 360, 360);
   if (_lastHeading != nil && _updateRate > 0) {
     double difference = std::fabs(adjustedHeading - _lastHeading.doubleValue);
@@ -239,7 +254,11 @@ useTrueNorth:(BOOL)useTrueNorth
 
 - (void)orientationDidChange:(NSNotification *)notification
 {
-  [self sendHeading:_locationManager.heading];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (self->_updating) {
+      [self updateHeadingOrientation];
+    }
+  });
 }
 
 - (void)locationManager:(CLLocationManager *)manager didFailWithError:(NSError *)error

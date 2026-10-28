@@ -10,6 +10,15 @@ React Native module for iOS & Android to receive compass heading
   have the required sensors; check `hasCompass()` before starting.
 - Expo projects need a development build. Expo Go is not supported.
 
+### React Native compatibility
+
+The current 3.x source targets the New Architecture on React Native 0.82+,
+including 0.87. The example app and native CI builds use React Native 0.88;
+this is not a claim that every supported React Native version or physical
+device has been tested. Compatibility of the older 2.0.2 release with 0.87
+has not been verified on both platforms. Rebuild your app after upgrading
+the library; JavaScript-only reloads do not update native code.
+
 ## Installation
 
 ```sh
@@ -208,19 +217,48 @@ reported precision are intentionally different:
 
 | Behavior            | Android                                                                                                                   | iOS                                                                                                                      |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Hardware check      | Both accelerometer and magnetometer must exist                                                                            | Core Location's `headingAvailable`                                                                                       |
-| Heading calculation | Accelerometer/magnetometer rotation matrix; both vectors are low-pass filtered with `alpha = 0.97` at `SENSOR_DELAY_GAME` | Core Location's magnetic heading; no additional library smoothing                                                        |
+| Hardware check      | A magnetic-north rotation-vector sensor, or both accelerometer and magnetometer, must exist                              | Core Location's `headingAvailable`                                                                                       |
+| Heading calculation | Android's fused `TYPE_ROTATION_VECTOR`, with accelerometer/magnetometer fallback; sampled at `SENSOR_DELAY_GAME`          | Core Location's magnetic heading; no additional library smoothing                                                        |
 | True-north mode     | Adds Android's `GeomagneticField` declination from location and current time                                              | Uses Core Location's `trueHeading` with location updates enabled                                                         |
-| Invalid readings    | Samples without a valid rotation matrix are ignored                                                                       | Readings with negative `headingAccuracy` are ignored                                                                     |
+| Invalid readings    | Samples without a valid rotation matrix or a horizontal screen-edge projection are ignored                                | Readings with negative `headingAccuracy` are ignored                                                                     |
 | Reported `heading`  | Truncated to integer degrees after filtering                                                                              | Core Location's fractional degrees are preserved                                                                         |
 | Reported `accuracy` | Constant `1` for compatibility; **not** an accuracy estimate                                                              | Core Location's estimated heading uncertainty in degrees                                                                 |
-| Screen rotation     | Display rotation offsets `0`, `90`, `180`, `270`                                                                          | Active window scene's interface orientation: portrait `0`, upside-down `180`, landscape-left `-90`, landscape-right `90` |
+| Screen rotation     | Projects the top screen edge from the rotation matrix for all four display rotations before calculating azimuth           | Core Location's `headingOrientation`, set from the active window scene's interface orientation                           |
 
-Both platforms normalize headings after applying the screen rotation. When no
-display/active window scene is available, no orientation offset is applied.
+Both platforms account for screen orientation before calculating heading, then
+normalize the result. When no display/active window scene is available, portrait
+orientation is used. iOS waits for a fresh Core Location heading after an
+orientation change instead of applying an angle to a cached portrait reading.
+Android prefers the magnetic-north rotation vector (not the relative
+`TYPE_GAME_ROTATION_VECTOR`). If that sensor is absent or cannot be registered,
+it falls back to the accelerometer and magnetometer. The fallback waits for
+both initial samples, then low-pass filters both vectors with `alpha = 0.97`.
 Because their sensor processing differs, identical motion need not produce
 identical values or callback timing on Android and iOS. Use a physical device
 away from magnetic interference; availability alone says nothing about accuracy.
+
+### Troubleshooting sensor availability and incorrect headings
+
+- Call `await CompassHeading.hasCompass()` before starting. On a simulator or
+  device without suitable sensors it returns `false`; `start()` also rejects
+  with `not_available`. Emulators that advertise virtual sensors can return
+  `true` without producing useful readings.
+- `start()` resolving to `true` means listeners were registered, not that a
+  reading has arrived. Track the first callback in your app if you need a
+  "waiting for sensor data" state. `hasCompass()` does not diagnose stalled,
+  uncalibrated, or magnetically disturbed hardware.
+- For inconsistent Android readings, including on Samsung devices, remove
+  magnetic cases/accessories, move away from metal and electronics, and
+  calibrate the compass using the device manufacturer's guidance. The fused
+  sensor improves motion handling but cannot correct magnetic interference.
+- Test portrait, both landscape directions, and upside-down orientation on a
+  physical device. Android calculates the heading from the screen edge before
+  the degree filter, rather than adding a fixed angle to a tilted heading.
+  When that edge points almost exactly up or down, its horizontal heading is undefined;
+  Android suppresses those samples until the device is tilted away from vertical.
+- Android's `accuracy: 1` is retained for compatibility and is not a calibration
+  or sensor-health indicator. Device-specific accuracy needs physical-device
+  verification; a simulator build cannot establish it.
 
 ### Validation and errors
 
@@ -246,9 +284,12 @@ This repository was regenerated with
 0.64.0 using the Kotlin/Objective-C Turbo Module template, with a React Native
 0.88 example app and Builder Bob 0.44.
 
-The package name and default `start`/`stop` API are preserved. The accelerometer
-and magnetometer smoothing, magnetic heading, degree filter, and display rotation
-handling have been ported. `hasCompass()` is now available on iOS as well.
+The package name and default `start`/`stop` API are preserved. Magnetic heading,
+the degree filter, and accelerometer/magnetometer fallback smoothing are
+preserved. Android now prefers the platform's fused rotation vector and accounts
+for screen rotation before calculating heading, including when tilted.
+On iOS, Core Location handles heading orientation instead of fixed angle offsets.
+`hasCompass()` is now available on iOS as well.
 
 Compatibility changes:
 
