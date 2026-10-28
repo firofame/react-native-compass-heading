@@ -9,11 +9,17 @@ export type HeadingData = {
   accuracy: number;
 };
 
+export type HeadingError = {
+  code: string;
+  message: string;
+};
+
 export interface Spec extends TurboModule {
-  start(degreeUpdateRate: number): Promise<boolean>;
+  start(degreeUpdateRate: number, useTrueNorth: boolean): Promise<boolean>;
   stop(): void;
   hasCompass(): Promise<boolean>;
   readonly onHeadingUpdated: CodegenTypes.EventEmitter<HeadingData>;
+  readonly onError: CodegenTypes.EventEmitter<HeadingError>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('CompassHeading');
