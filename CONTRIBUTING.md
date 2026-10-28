@@ -92,6 +92,36 @@ yarn test
 CI runs on pushes to `master`, pull requests targeting `master`, and merge queue
 checks.
 
+### Dependency security
+
+Check all workspaces and transitive JavaScript dependencies with:
+
+```sh
+yarn npm audit --all --recursive --no-deprecations
+```
+
+Use `yarn up -R <package>` to refresh affected transitive dependencies within
+their existing ranges, preserving parallel major versions. Commit the updated
+lockfile and run lint, typechecking, tests, and the package build.
+
+This checks security advisories without treating package deprecations as
+vulnerabilities.
+
+The root `resolutions` entries temporarily update `release-it`'s pinned `undici`
+dependency to a patched v7 release and `get-uri`'s `basic-ftp` to patched v6.
+The FTP update rejects separate transfer hosts by default for security.
+Remove these overrides once the parent packages depend on patched versions.
+
+`deepmerge` 4.3.1 has no published fix for GHSA-gcqx-w48m-w2h4. A committed Yarn
+patch writes own data properties instead of invoking prototype setters, with
+regression coverage in the unit tests. Registry audits still report the original
+version because they do not inspect local patches; do not ignore the advisory.
+Remove the patch only after upgrading to a verified upstream fix.
+
+The example requires `concurrent-ruby` 1.3.7 or newer. Keep that security floor
+when updating its Ruby dependencies, and validate CocoaPods with
+`bundle exec pod --version` from `example/`.
+
 ### Commit message convention
 
 We follow the [conventional commits specification](https://www.conventionalcommits.org/en) for our commit messages:
