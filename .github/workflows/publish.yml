@@ -57,12 +57,6 @@ jobs:
 
       - name: Publish package to npmjs
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           NPM_DIST_TAG: ${{ steps.release.outputs.npm-tag }}
         run: |
-          if [[ -z "$NODE_AUTH_TOKEN" ]]; then
-            echo "::error::Repository secret NODE_AUTH_TOKEN is required to publish to npmjs."
-            exit 1
-          fi
-
           npm publish --access public --provenance --tag "$NPM_DIST_TAG"
